@@ -8,7 +8,9 @@ import {
   Cpu,
   Layers,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Menu,
+  X
 } from 'lucide-react';
 import { ResearchView } from './components/ResearchView';
 import { DocumentVaultView } from './components/DocumentVaultView';
@@ -28,6 +30,7 @@ export function App() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   const refreshAll = async () => {
     try {
@@ -57,26 +60,36 @@ export function App() {
   const isHealthy = health?.status === 'healthy';
 
   return (
-    <div className="min-h-screen bg-surface-950 text-surface-100 flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
+    <div className="h-screen w-screen overflow-hidden bg-surface-950 text-surface-100 flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
       {/* Sleek Top Navigation Header */}
-      <header className="h-14 border-b border-surface-800 bg-surface-900/80 backdrop-blur-md px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
-        {/* Left: App Logo */}
-        <div className="flex items-center space-x-3">
+      <header className="h-14 border-b border-surface-800 bg-surface-900/80 backdrop-blur-md px-3 md:px-6 flex items-center justify-between sticky top-0 z-40 shrink-0">
+        {/* Left: App Logo & Mobile Menu Toggle */}
+        <div className="flex items-center space-x-2.5">
+          {activeView === 'research' && (
+            <button
+              onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+              className="p-1.5 rounded-lg text-surface-400 hover:text-surface-100 hover:bg-surface-800 md:hidden"
+              aria-label="Toggle threads drawer"
+            >
+              {isMobileDrawerOpen ? <X className="w-5 h-5 text-emerald-400" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
+
           <div className="w-8 h-8 rounded-lg bg-surface-800 border border-surface-700 flex items-center justify-center text-emerald-400 font-bold text-sm shadow-sm">
             KV
           </div>
           <div className="flex items-center space-x-2">
-            <h1 className="font-semibold text-surface-100 text-sm tracking-tight">
+            <h1 className="font-semibold text-surface-100 text-sm tracking-tight truncate max-w-[140px] sm:max-w-none">
               KnowledgeVault AI
             </h1>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-800 text-emerald-400 border border-emerald-500/20">
+            <span className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-800 text-emerald-400 border border-emerald-500/20">
               v1.0
             </span>
           </div>
         </div>
 
-        {/* Center: Clean View Switcher */}
-        <nav className="flex items-center space-x-1 bg-surface-950/80 border border-surface-800 p-1 rounded-xl text-xs font-medium">
+        {/* Center: Desktop View Switcher */}
+        <nav className="hidden md:flex items-center space-x-1 bg-surface-950/80 border border-surface-800 p-1 rounded-xl text-xs font-medium">
           <button
             onClick={() => setActiveView('research')}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg transition-all ${
@@ -120,8 +133,8 @@ export function App() {
         </nav>
 
         {/* Right: Telemetry & Settings */}
-        <div className="flex items-center space-x-3">
-          <div className="hidden sm:flex items-center space-x-2 bg-surface-950/60 border border-surface-800 px-2.5 py-1 rounded-full text-xs font-mono">
+        <div className="flex items-center space-x-2">
+          <div className="hidden lg:flex items-center space-x-2 bg-surface-950/60 border border-surface-800 px-2.5 py-1 rounded-full text-xs font-mono">
             <span className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-emerald-400' : 'bg-amber-400'}`} />
             <span className="text-surface-300">{isHealthy ? 'Online' : 'Degraded'}</span>
             <span className="text-surface-700">•</span>
@@ -139,7 +152,7 @@ export function App() {
       </header>
 
       {/* Main Workspace Stage */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex overflow-hidden relative">
         {activeView === 'research' && (
           <ResearchView
             conversations={conversations}
@@ -150,6 +163,8 @@ export function App() {
             onRefreshConversations={refreshAll}
             onSelectCitation={(cit) => setSelectedCitation(cit)}
             onNavigateToDocs={() => setActiveView('vault')}
+            isMobileDrawerOpen={isMobileDrawerOpen}
+            onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
           />
         )}
 
@@ -166,7 +181,47 @@ export function App() {
         )}
       </main>
 
-      {/* Slide-over Source Excerpt Drawer */}
+      {/* Mobile Bottom Navigation Bar (Visible only on mobile screens) */}
+      <nav className="md:hidden flex items-center justify-around h-16 bg-surface-900/95 border-t border-surface-800 backdrop-blur-lg px-2 z-30 shrink-0">
+        <button
+          onClick={() => { setActiveView('research'); setIsMobileDrawerOpen(false); }}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+            activeView === 'research' ? 'text-emerald-400 font-semibold' : 'text-surface-400'
+          }`}
+        >
+          <MessageSquare className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Research</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveView('vault'); setIsMobileDrawerOpen(false); }}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+            activeView === 'vault' ? 'text-emerald-400 font-semibold' : 'text-surface-400'
+          }`}
+        >
+          <div className="relative">
+            <FolderArchive className="w-5 h-5 mb-0.5" />
+            {documents.length > 0 && (
+              <span className="absolute -top-1 -right-2 px-1 text-[9px] font-mono rounded-full bg-emerald-500 text-surface-950 font-bold">
+                {documents.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px]">Vault</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveView('benchmarks'); setIsMobileDrawerOpen(false); }}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+            activeView === 'benchmarks' ? 'text-emerald-400 font-semibold' : 'text-surface-400'
+          }`}
+        >
+          <BarChart3 className="w-5 h-5 mb-0.5" />
+          <span className="text-[10px]">Benchmarks</span>
+        </button>
+      </nav>
+
+      {/* Slide-over Source Excerpt Drawer / Bottom Sheet on Mobile */}
       <SourceDrawer
         citation={selectedCitation}
         onClose={() => setSelectedCitation(null)}

@@ -11,9 +11,9 @@ export const SourceDrawer: React.FC<SourceDrawerProps> = ({ citation, onClose })
   if (!citation) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
+    <div className="fixed inset-0 z-50 flex md:justify-end justify-center items-end md:items-stretch bg-black/60 backdrop-blur-sm transition-opacity">
       <div 
-        className="w-full max-w-lg bg-surface-900 border-l border-surface-800 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200"
+        className="w-full md:max-w-lg bg-surface-900 border-t md:border-t-0 md:border-l border-surface-800 rounded-t-2xl md:rounded-none max-h-[88vh] md:max-h-full h-full flex flex-col shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

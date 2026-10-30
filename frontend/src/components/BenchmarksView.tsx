@@ -67,7 +67,7 @@ export const BenchmarksView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 p-6 max-w-6xl mx-auto space-y-6 overflow-y-auto">
+    <div className="flex-1 p-4 md:p-6 max-w-6xl mx-auto space-y-6 overflow-y-auto pb-20 md:pb-6">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-surface-800 pb-5">
         <div>
