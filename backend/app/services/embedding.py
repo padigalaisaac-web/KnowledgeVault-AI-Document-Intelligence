@@ -20,14 +20,19 @@ class EmbeddingService:
         self._load_model()
 
     def _load_model(self):
-        """Attempt to load SentenceTransformer if installed."""
+        """Attempt to load SentenceTransformer only if explicitly enabled."""
+        if not getattr(settings, "LOAD_LOCAL_SENTENCE_TRANSFORMER", False):
+            logger.info("Using ultra-lightweight semantic projector (<50MB RAM for Render Free Tier).")
+            self._st_model = None
+            return
+
         try:
             from sentence_transformers import SentenceTransformer
             logger.info("Loading SentenceTransformer model: %s", self.model_name)
             self._st_model = SentenceTransformer(self.model_name)
             logger.info("SentenceTransformer loaded successfully.")
         except Exception as e:
-            logger.info("SentenceTransformers not available or failed to load (%s). Using high-fidelity semantic projector.", e)
+            logger.info("SentenceTransformers unavailable (%s). Using high-fidelity semantic projector.", e)
             self._st_model = None
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:

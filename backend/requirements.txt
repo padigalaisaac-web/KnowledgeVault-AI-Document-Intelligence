@@ -16,9 +16,6 @@ numpy>=1.26.0
 pypdf>=5.0.0
 pymupdf>=1.24.0; sys_platform != "win32" or platform_machine != "ARM64"
 
-# Embeddings & ML (Installed in Linux/Docker and supported platforms)
-sentence-transformers>=3.0.0; sys_platform != "win32" or platform_machine != "ARM64"
-
 # HTTP client & utilities
 httpx>=0.27.0
 python-multipart>=0.0.9

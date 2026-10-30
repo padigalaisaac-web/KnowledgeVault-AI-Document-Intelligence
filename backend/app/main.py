@@ -1,6 +1,7 @@
 """Main FastAPI application entry point for KnowledgeVault AI."""
 import os
 import json
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware

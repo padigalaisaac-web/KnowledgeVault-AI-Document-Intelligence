@@ -1,16 +1,25 @@
 # ============================================================
-# KnowledgeVault AI — Unified Multi-Stage Production Dockerfile
+# KnowledgeVault AI — Self-Extracting Production Dockerfile
 # Optimized for Render, Railway, Fly.io, and Local Docker Runs
+# Supports both loose folders and zipped repo distributions
 # ============================================================
 
 # --- Stage 1: Build React Frontend ---
 FROM node:20-alpine AS frontend-builder
 WORKDIR /build
 
-COPY frontend/package*.json ./
-RUN npm ci
+# Install unzip in case source is packaged as KnowledgeVault-AI-Production.zip
+RUN apk add --no-cache unzip
 
-COPY frontend/ ./
+COPY . .
+
+# If source is packed in zip and frontend folder is not extracted, unpack it
+RUN if [ -f "KnowledgeVault-AI-Production.zip" ] && [ ! -d "frontend/src" ]; then \
+        unzip -q -o KnowledgeVault-AI-Production.zip; \
+    fi
+
+WORKDIR /build/frontend
+RUN npm ci
 RUN npm run build
 
 # --- Stage 2: Install Python Dependencies ---
@@ -20,9 +29,16 @@ WORKDIR /build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt ./
+COPY . .
+
+RUN if [ -f "KnowledgeVault-AI-Production.zip" ] && [ ! -f "backend/requirements.txt" ]; then \
+        unzip -q -o KnowledgeVault-AI-Production.zip; \
+    fi
+
+WORKDIR /build/backend
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --prefix=/install -r requirements.txt
 
@@ -32,21 +48,21 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed python packages
+# Copy installed python packages from Stage 2
 COPY --from=python-builder /install /usr/local
 
-# Copy backend application
-COPY backend/app /app/backend/app
-COPY backend/pyproject.toml /app/backend/pyproject.toml
+# Copy application files (or unpack from zip)
+COPY . /app
 
-# Copy compiled frontend distribution
-COPY --from=frontend-builder /build/dist /app/frontend/dist
+RUN if [ -f "/app/KnowledgeVault-AI-Production.zip" ] && [ ! -d "/app/backend/app" ]; then \
+        unzip -q -o /app/KnowledgeVault-AI-Production.zip -d /app; \
+    fi
 
-# Copy seed datasets and sample documents
-COPY data/benchmark_dataset.json /app/data/benchmark_dataset.json
-COPY data/sample_documents /app/data/sample_documents
+# Copy compiled frontend distribution from Stage 1
+COPY --from=frontend-builder /build/frontend/dist /app/frontend/dist
 
 # Ensure persistent directories exist
 RUN mkdir -p /app/data/uploads /app/data/vector_storage
@@ -58,7 +74,7 @@ ENV PYTHONPATH=/app/backend:/app \
 
 EXPOSE 8000 10000
 
-# Health check
+# Health check probing Render's dynamic $PORT
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://127.0.0.1:${PORT:-8000}/health || exit 1
 

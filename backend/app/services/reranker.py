@@ -16,7 +16,11 @@ class PassageReranker:
         self._load_model()
 
     def _load_model(self):
-        """Attempt to load sentence_transformers CrossEncoder."""
+        """Attempt to load sentence_transformers CrossEncoder only if explicitly enabled."""
+        if not getattr(settings, "LOAD_LOCAL_SENTENCE_TRANSFORMER", False):
+            self._cross_encoder = None
+            return
+
         try:
             from sentence_transformers import CrossEncoder
             self._cross_encoder = CrossEncoder(self.model_name)
