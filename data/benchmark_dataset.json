@@ -1,0 +1,242 @@
+[
+  {
+    "id": "q01",
+    "question": "What is the ensemble technique used by Random Forest?",
+    "category": "factual_lookup",
+    "expected_answer": "Bootstrap aggregating (bagging), where each tree is trained on a random bootstrap sample with replacement.",
+    "is_answerable": true,
+    "keywords": ["random forest", "bootstrap aggregating", "bagging"]
+  },
+  {
+    "id": "q02",
+    "question": "How does feature subsampling work in Random Forest for classification versus regression?",
+    "category": "factual_lookup",
+    "expected_answer": "Typically sqrt(p) for classification and p/3 for regression, where p is the total number of features.",
+    "is_answerable": true,
+    "keywords": ["feature subsampling", "sqrt", "p/3", "classification"]
+  },
+  {
+    "id": "q03",
+    "question": "What is the mathematical formula for Gini Impurity?",
+    "category": "exact_term",
+    "expected_answer": "I_G(p) = 1 - sum(p_i^2).",
+    "is_answerable": true,
+    "keywords": ["gini impurity", "formula", "p_i^2"]
+  },
+  {
+    "id": "q04",
+    "question": "What proportion of instances are typically left out of each bootstrap sample in Random Forest?",
+    "category": "factual_lookup",
+    "expected_answer": "Approximately 36.8% of instances are left out as out-of-bag (OOB) samples.",
+    "is_answerable": true,
+    "keywords": ["36.8%", "out-of-bag", "oob"]
+  },
+  {
+    "id": "q05",
+    "question": "What is the primary role of Out-of-Bag (OOB) error in decision tree ensembles?",
+    "category": "paraphrase",
+    "expected_answer": "It serves as an internal cross-validation mechanism without requiring a separate held-out validation set.",
+    "is_answerable": true,
+    "keywords": ["out-of-bag", "cross-validation", "internal"]
+  },
+  {
+    "id": "q06",
+    "question": "How do Gradient Boosted Decision Trees build successive trees?",
+    "category": "factual_lookup",
+    "expected_answer": "Trees are built sequentially, with each subsequent tree predicting pseudo-residuals (negative gradient of the loss function).",
+    "is_answerable": true,
+    "keywords": ["sequentially", "pseudo-residuals", "gradient"]
+  },
+  {
+    "id": "q07",
+    "question": "What role does the shrinkage parameter or learning rate play in gradient boosting?",
+    "category": "paraphrase",
+    "expected_answer": "The learning rate scales the contribution of each newly added tree to prevent overfitting.",
+    "is_answerable": true,
+    "keywords": ["shrinkage", "learning rate", "overfitting"]
+  },
+  {
+    "id": "q08",
+    "question": "How does XGBoost handle missing values during tree splits?",
+    "category": "exact_term",
+    "expected_answer": "XGBoost implements a default split direction learned from the data for missing values.",
+    "is_answerable": true,
+    "keywords": ["default split direction", "missing values"]
+  },
+  {
+    "id": "q09",
+    "question": "What is the optimization objective of Support Vector Machines?",
+    "category": "factual_lookup",
+    "expected_answer": "Maximizing the geometric margin between classes while penalizing margin violations using slack variables and parameter C.",
+    "is_answerable": true,
+    "keywords": ["geometric margin", "slack variables", "hyperplane"]
+  },
+  {
+    "id": "q10",
+    "question": "What are two common kernel functions used in SVMs to map data into higher dimensions?",
+    "category": "multi_passage",
+    "expected_answer": "The Radial Basis Function (RBF) kernel and polynomial kernels.",
+    "is_answerable": true,
+    "keywords": ["radial basis function", "rbf", "polynomial kernel"]
+  },
+  {
+    "id": "q11",
+    "question": "What is the mathematical formulation of Scaled Dot-Product Attention?",
+    "category": "exact_term",
+    "expected_answer": "Attention(Q, K, V) = softmax(QK^T / sqrt(d_k)) * V.",
+    "is_answerable": true,
+    "keywords": ["scaled dot-product", "softmax", "sqrt(d_k)"]
+  },
+  {
+    "id": "q12",
+    "question": "Why is the scaling factor sqrt(d_k) used in attention mechanisms?",
+    "category": "factual_lookup",
+    "expected_answer": "To counteract vanishing softmax gradients for large projection dimensions.",
+    "is_answerable": true,
+    "keywords": ["counteract", "vanishing gradients", "scaling factor"]
+  },
+  {
+    "id": "q13",
+    "question": "Explain how Multi-Head Attention combines information from distinct projection spaces.",
+    "category": "paraphrase",
+    "expected_answer": "It linearly projects queries, keys, and values h times with learned parameter matrices, runs attention on each head, concatenates them, and projects with W^O.",
+    "is_answerable": true,
+    "keywords": ["multi-head attention", "linearly projects", "concatenates"]
+  },
+  {
+    "id": "q14",
+    "question": "Define Precision and explain a scenario where it is the critical evaluation metric.",
+    "category": "paraphrase",
+    "expected_answer": "Precision = TP / (TP + FP). It is critical in spam detection and automated medical diagnosis where false alarms carry substantial cost.",
+    "is_answerable": true,
+    "keywords": ["precision", "tp / (tp + fp)", "spam detection", "false alarms"]
+  },
+  {
+    "id": "q15",
+    "question": "Define Recall and describe why it is essential in cancer screening.",
+    "category": "factual_lookup",
+    "expected_answer": "Recall = TP / (TP + FN). In cancer screening, missing a true positive is catastrophic, so high recall is vital.",
+    "is_answerable": true,
+    "keywords": ["recall", "tp / (tp + fn)", "cancer screening", "false negative"]
+  },
+  {
+    "id": "q16",
+    "question": "What is the formula for F1-Score?",
+    "category": "exact_term",
+    "expected_answer": "F1 = 2 * (Precision * Recall) / (Precision + Recall) = 2*TP / (2*TP + FP + FN).",
+    "is_answerable": true,
+    "keywords": ["harmonic mean", "2 * precision * recall", "f1-score"]
+  },
+  {
+    "id": "q17",
+    "question": "What is the difference between Macro-F1 and Micro-F1?",
+    "category": "comparison",
+    "expected_answer": "Macro-F1 computes unweighted class metrics giving equal importance to all classes; Micro-F1 aggregates global TP, FP, FN biasing towards majority classes.",
+    "is_answerable": true,
+    "keywords": ["macro-f1", "micro-f1", "unweighted", "majority classes"]
+  },
+  {
+    "id": "q18",
+    "question": "Why is PR-AUC preferred over ROC-AUC in severe class imbalance?",
+    "category": "factual_lookup",
+    "expected_answer": "PR-AUC does not incorporate True Negatives, making it sensitive to positive class performance in heavily skewed distributions.",
+    "is_answerable": true,
+    "keywords": ["pr-auc", "class imbalance", "true negatives"]
+  },
+  {
+    "id": "q19",
+    "question": "What is Mean Reciprocal Rank (MRR) and how is it calculated?",
+    "category": "exact_term",
+    "expected_answer": "MRR is the average of reciprocal ranks (1 / rank_i) of the first relevant item across queries.",
+    "is_answerable": true,
+    "keywords": ["mean reciprocal rank", "mrr", "1/rank"]
+  },
+  {
+    "id": "q20",
+    "question": "How does NDCG@K penalize relevant items found further down the retrieved list?",
+    "category": "paraphrase",
+    "expected_answer": "By using a logarithmic discount factor log2(i + 1) in the denominator.",
+    "is_answerable": true,
+    "keywords": ["ndcg", "logarithmic discount", "log2"]
+  },
+  {
+    "id": "q21",
+    "question": "What does Faithfulness measure in the RAG Triad framework?",
+    "category": "exact_term",
+    "expected_answer": "Whether claims in the generated response can be strictly deduced from retrieved context passages without hallucination.",
+    "is_answerable": true,
+    "keywords": ["faithfulness", "deduced", "retrieved context", "rag triad"]
+  },
+  {
+    "id": "q22",
+    "question": "Compare Random Forest and Gradient Boosted Decision Trees in terms of tree construction order.",
+    "category": "comparison",
+    "expected_answer": "Random Forest builds independent trees in parallel using bagging; GBDTs build sequential trees where each tree fits residual errors of previous trees.",
+    "is_answerable": true,
+    "keywords": ["random forest", "gradient boosted", "parallel", "sequential", "bagging"]
+  },
+  {
+    "id": "q23",
+    "question": "What evaluation metric evaluates n-gram recall and longest common subsequence for summarization?",
+    "category": "factual_lookup",
+    "expected_answer": "ROUGE (including ROUGE-1, ROUGE-2, and ROUGE-L).",
+    "is_answerable": true,
+    "keywords": ["rouge", "summarization", "longest common subsequence"]
+  },
+  {
+    "id": "q24",
+    "question": "What metric measures n-gram precision between machine translation output and reference with brevity penalty?",
+    "category": "exact_term",
+    "expected_answer": "BLEU metric.",
+    "is_answerable": true,
+    "keywords": ["bleu", "brevity penalty", "precision"]
+  },
+  {
+    "id": "q25",
+    "question": "What is the quantum superposition decoherence rate of the D-Wave quantum annealing processor?",
+    "category": "unanswerable",
+    "expected_answer": "The uploaded documents do not contain sufficient information to answer this question.",
+    "is_answerable": false,
+    "keywords": ["quantum", "d-wave", "decoherence"]
+  },
+  {
+    "id": "q26",
+    "question": "What was the total revenue of Tesla in the third quarter of 2024?",
+    "category": "unanswerable",
+    "expected_answer": "The uploaded documents do not contain sufficient information to answer this question.",
+    "is_answerable": false,
+    "keywords": ["tesla", "revenue", "2024"]
+  },
+  {
+    "id": "q27",
+    "question": "How do you synthesize mRNA vaccines according to the uploaded papers?",
+    "category": "unanswerable",
+    "expected_answer": "The uploaded documents do not contain sufficient information to answer this question.",
+    "is_answerable": false,
+    "keywords": ["mrna", "vaccine", "synthesize"]
+  },
+  {
+    "id": "q28",
+    "question": "What is the capital city of Australia according to the machine learning guide?",
+    "category": "unanswerable",
+    "expected_answer": "The uploaded documents do not contain sufficient information to answer this question.",
+    "is_answerable": false,
+    "keywords": ["capital city", "australia"]
+  },
+  {
+    "id": "q29",
+    "question": "Explain how histogram-based binning in LightGBM speeds up tree splits.",
+    "category": "factual_lookup",
+    "expected_answer": "LightGBM uses histogram-based binning of continuous feature values into discrete bins to accelerate computation.",
+    "is_answerable": true,
+    "keywords": ["histogram-based binning", "lightgbm", "accelerate"]
+  },
+  {
+    "id": "q30",
+    "question": "How does Support Vector Machine handle non-linearly separable data?",
+    "category": "paraphrase",
+    "expected_answer": "By using the kernel trick to implicitly project data into higher-dimensional Hilbert spaces where it becomes linearly separable.",
+    "is_answerable": true,
+    "keywords": ["kernel trick", "higher-dimensional", "hilbert space"]
+  }
+]
