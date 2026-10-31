@@ -28,13 +28,39 @@ export const DocumentVaultView: React.FC<DocumentVaultViewProps> = ({
   collections,
   onRefresh,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCollection, setSelectedCollection] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState(() => localStorage.getItem('kv_vault_search') || '');
+  const [selectedCollection, setSelectedCollection] = useState<string>(
+    () => localStorage.getItem('kv_vault_collection') || ''
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
-  const [selectedDocDetail, setSelectedDocDetail] = useState<DocumentItem | null>(null);
+  const [selectedDocDetail, setSelectedDocDetail] = useState<DocumentItem | null>(() => {
+    try {
+      const savedDoc = localStorage.getItem('kv_preview_doc');
+      return savedDoc ? JSON.parse(savedDoc) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isDragging, setIsDragging] = useState(false);
+
+  // Sync filters and preview details to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('kv_vault_search', searchQuery);
+  }, [searchQuery]);
+
+  React.useEffect(() => {
+    localStorage.setItem('kv_vault_collection', selectedCollection);
+  }, [selectedCollection]);
+
+  React.useEffect(() => {
+    if (selectedDocDetail) {
+      localStorage.setItem('kv_preview_doc', JSON.stringify(selectedDocDetail));
+    } else {
+      localStorage.removeItem('kv_preview_doc');
+    }
+  }, [selectedDocDetail]);
   
   // New Collection State
   const [isNewCollectionOpen, setIsNewCollectionOpen] = useState(false);

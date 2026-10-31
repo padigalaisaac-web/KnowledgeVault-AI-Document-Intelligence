@@ -5,6 +5,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.config import settings
@@ -78,6 +79,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# GZip compression for fast payload transfers
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # Include API Routers
 app.include_router(collections.router)
 app.include_router(documents.router)
@@ -86,9 +90,16 @@ app.include_router(eval_api.router)
 app.include_router(settings_api.router)
 
 
+_last_vector_count: int = 0
+_last_vector_check_time: float = 0.0
+
+
 @app.get("/health", tags=["Health"])
 def health_check(db: Session = Depends(get_db)):
-    """Health check verifying database connection and vector store readiness."""
+    """Health check verifying database connection and vector store readiness with cached telemetry."""
+    global _last_vector_count, _last_vector_check_time
+    import time
+
     db_ok = False
     try:
         db.execute(text("SELECT 1"))
@@ -96,7 +107,14 @@ def health_check(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error("Health check DB probe failed: %s", e)
 
-    vector_count = vector_store.count_vectors()
+    now = time.time()
+    # Cache vector count for 30s to prevent disk I/O bottlenecks during rapid polling
+    if now - _last_vector_check_time > 30 or _last_vector_count == 0:
+        try:
+            _last_vector_count = vector_store.count_vectors()
+            _last_vector_check_time = now
+        except Exception:
+            pass
 
     return {
         "status": "healthy" if db_ok else "degraded",
@@ -104,7 +122,7 @@ def health_check(db: Session = Depends(get_db)):
         "version": settings.APP_VERSION,
         "database_connected": db_ok,
         "vector_store_ready": True,
-        "indexed_vector_count": vector_count,
+        "indexed_vector_count": _last_vector_count,
         "llm_provider": settings.LLM_PROVIDER,
         "embedding_model": settings.EMBEDDING_MODEL
     }

@@ -42,25 +42,71 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
   isMobileDrawerOpen = false,
   onCloseMobileDrawer,
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputQuery, setInputQuery] = useState('');
+  // Hydrate initial messages from cache if active conversation is already set
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (activeConversation?.id) {
+      try {
+        const cached = localStorage.getItem(`kv_msgs_${activeConversation.id}`);
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return [];
+  });
+  const [inputQuery, setInputQuery] = useState(() => localStorage.getItem('kv_draft_query') || '');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<string>('');
-  const [retrievalMode, setRetrievalMode] = useState<string>('hybrid');
+  const [selectedCollection, setSelectedCollection] = useState<string>(
+    () => localStorage.getItem('kv_selected_collection') || ''
+  );
+  const [retrievalMode, setRetrievalMode] = useState<string>(
+    () => localStorage.getItem('kv_retrieval_mode') || 'hybrid'
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load messages whenever activeConversation changes
+  // Sync draft query, collection & mode to localStorage
+  useEffect(() => {
+    if (inputQuery) {
+      localStorage.setItem('kv_draft_query', inputQuery);
+    } else {
+      localStorage.removeItem('kv_draft_query');
+    }
+  }, [inputQuery]);
+
+  useEffect(() => {
+    localStorage.setItem('kv_selected_collection', selectedCollection);
+  }, [selectedCollection]);
+
+  useEffect(() => {
+    localStorage.setItem('kv_retrieval_mode', retrievalMode);
+  }, [retrievalMode]);
+
+  // Load messages whenever activeConversation changes (with instant cache hydration)
   useEffect(() => {
     if (activeConversation) {
+      const cacheKey = `kv_msgs_${activeConversation.id}`;
+      // Instant display from cache (0 ms perceptual latency)
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          setMessages(JSON.parse(cached));
+        }
+      } catch {}
+
+      // Revalidate in background
       api.getConversation(activeConversation.id)
-        .then((c) => setMessages(c.messages || []))
+        .then((c) => {
+          const fetched = c.messages || [];
+          setMessages(fetched);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(fetched));
+          } catch {}
+        })
         .catch((err) => console.error('Failed to load thread:', err));
     } else {
       setMessages([]);
     }
-  }, [activeConversation]);
+  }, [activeConversation?.id]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -72,6 +118,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
     if (!textToSend || isLoading) return;
 
     setInputQuery('');
+    localStorage.removeItem('kv_draft_query');
 
     // Optimistic user message
     const tempUserMsg: Message = {
@@ -82,7 +129,8 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
       sources: [],
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, tempUserMsg]);
+    const optimisticMessages = [...messages, tempUserMsg];
+    setMessages(optimisticMessages);
     setIsLoading(true);
 
     try {
@@ -103,7 +151,14 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
         });
       }
 
-      setMessages((prev) => [...prev.filter((m) => m.id !== tempUserMsg.id), tempUserMsg, responseMsg]);
+      const updated = [...messages.filter((m) => m.id !== tempUserMsg.id), tempUserMsg, responseMsg];
+      setMessages(updated);
+      const targetConvId = activeConversation?.id || responseMsg.conversation_id;
+      if (targetConvId) {
+        try {
+          localStorage.setItem(`kv_msgs_${targetConvId}`, JSON.stringify(updated));
+        } catch {}
+      }
       onRefreshConversations();
     } catch (err: any) {
       alert(`Chat error: ${err.message}`);
@@ -117,12 +172,16 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
     setActiveConversation(null);
     setMessages([]);
     setInputQuery('');
+    localStorage.removeItem('kv_draft_query');
   };
 
   const handleDeleteConversation = async (convId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       await api.deleteConversation(convId);
+      try {
+        localStorage.removeItem(`kv_msgs_${convId}`);
+      } catch {}
       if (activeConversation?.id === convId) {
         setActiveConversation(null);
         setMessages([]);

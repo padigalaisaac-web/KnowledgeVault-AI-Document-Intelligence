@@ -20,31 +20,95 @@ import { SettingsModal } from './components/SettingsModal';
 import { DocumentItem, Collection, Conversation, SystemSettings, HealthStatus, CitationItem } from './types';
 import { api } from './services/api';
 
+function loadLocal<T>(key: string, defaultValue: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function saveLocal<T>(key: string, value: T): void {
+  try {
+    if (value === null || value === undefined) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch (e) {
+    console.warn('Failed to save state to localStorage:', e);
+  }
+}
+
 export function App() {
-  const [activeView, setActiveView] = useState<'research' | 'vault' | 'benchmarks'>('research');
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-  const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
+  const [activeView, setActiveView] = useState<'research' | 'vault' | 'benchmarks'>(() => {
+    return (localStorage.getItem('kv_active_view') as any) || 'research';
+  });
+  const [documents, setDocuments] = useState<DocumentItem[]>(() => loadLocal('kv_documents', []));
+  const [collections, setCollections] = useState<Collection[]>(() => loadLocal('kv_collections', []));
+  const [conversations, setConversations] = useState<Conversation[]>(() => loadLocal('kv_conversations', []));
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(() => loadLocal('kv_active_conv', null));
+  const [settings, setSettings] = useState<SystemSettings | null>(() => loadLocal('kv_settings', null));
+  const [health, setHealth] = useState<HealthStatus | null>(() => loadLocal('kv_health', null));
+  const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(() => loadLocal('kv_selected_citation', null));
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  // Sync state changes to localStorage for instant hydration across reloads & preview details
+  useEffect(() => {
+    localStorage.setItem('kv_active_view', activeView);
+  }, [activeView]);
+
+  useEffect(() => {
+    saveLocal('kv_documents', documents);
+  }, [documents]);
+
+  useEffect(() => {
+    saveLocal('kv_collections', collections);
+  }, [collections]);
+
+  useEffect(() => {
+    saveLocal('kv_conversations', conversations);
+  }, [conversations]);
+
+  useEffect(() => {
+    saveLocal('kv_active_conv', activeConversation);
+  }, [activeConversation]);
+
+  useEffect(() => {
+    saveLocal('kv_selected_citation', selectedCitation);
+  }, [selectedCitation]);
+
+  useEffect(() => {
+    if (settings) saveLocal('kv_settings', settings);
+  }, [settings]);
+
+  useEffect(() => {
+    if (health) saveLocal('kv_health', health);
+  }, [health]);
 
   const refreshAll = async () => {
     try {
       const [h, docs, colls, convs, s] = await Promise.all([
         api.getHealth().catch(() => null),
-        api.getDocuments().catch(() => []),
-        api.getCollections().catch(() => []),
-        api.getConversations().catch(() => []),
+        api.getDocuments().catch(() => null),
+        api.getCollections().catch(() => null),
+        api.getConversations().catch(() => null),
         api.getSettings().catch(() => null),
       ]);
       if (h) setHealth(h);
-      setDocuments(docs);
-      setCollections(colls);
-      setConversations(convs);
+      if (docs) setDocuments(docs);
+      if (colls) setCollections(colls);
+      if (convs) {
+        setConversations(convs);
+        // Keep active conversation reference fresh
+        setActiveConversation((prev) => {
+          if (!prev) return null;
+          const match = convs.find((c: Conversation) => c.id === prev.id);
+          return match || prev;
+        });
+      }
       if (s) setSettings(s);
     } catch (err) {
       console.error('Error refreshing workspace state:', err);
@@ -53,7 +117,11 @@ export function App() {
 
   useEffect(() => {
     refreshAll();
-    const interval = setInterval(refreshAll, 15000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshAll();
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 

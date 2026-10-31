@@ -8,7 +8,16 @@ import {
   HealthStatus
 } from '../types';
 
-const API_BASE = '';
+const isNativeMobile = typeof window !== 'undefined' && (
+  window.location.protocol === 'capacitor:' || 
+  window.location.origin === 'https://localhost' ||
+  window.location.hostname === 'localhost' && window.location.port === ''
+);
+
+// In native mobile app, point to live Render backend; in web browser, use relative same-origin
+export const API_BASE = (import.meta as any).env?.VITE_API_URL || (
+  isNativeMobile ? 'https://knowledgevault-ai.onrender.com' : ''
+);
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
