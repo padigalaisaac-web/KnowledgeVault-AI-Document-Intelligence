@@ -142,3 +142,19 @@ for dist_dir in dist_candidates:
         logger.info("Mounted production frontend from: %s", dist_dir)
         break
 
+
+@app.exception_handler(404)
+async def spa_404_handler(request, exc):
+    """Fallback handler routing HTML browser requests to index.html for React SPA on Render."""
+    path = request.url.path
+    if path.startswith("/api") or path.startswith("/health") or "." in path.split("/")[-1]:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    for dist_dir in dist_candidates:
+        index_path = dist_dir / "index.html"
+        if index_path.exists():
+            from fastapi.responses import FileResponse
+            return FileResponse(index_path)
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=404, content={"detail": "Not Found"})
+

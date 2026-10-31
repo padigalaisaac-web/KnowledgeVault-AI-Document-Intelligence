@@ -9,8 +9,8 @@ logger = logging.getLogger("knowledgevault.anthropic")
 
 
 class AnthropicProvider(LLMProvider):
-    def __init__(self, api_key: str = settings.LLM_API_KEY, model: str = settings.LLM_MODEL):
-        self.api_key = api_key or settings.LLM_API_KEY
+    def __init__(self, api_key: str = None, model: str = settings.LLM_MODEL):
+        self.api_key = api_key or settings.ANTHROPIC_API_KEY or settings.LLM_API_KEY
         self.model = model if model != "mock-expert-v1" else "claude-3-5-sonnet-20241022"
         self.base_url = "https://api.anthropic.com/v1"
 

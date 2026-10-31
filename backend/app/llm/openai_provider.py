@@ -9,8 +9,8 @@ logger = logging.getLogger("knowledgevault.openai")
 
 
 class OpenAIProvider(LLMProvider):
-    def __init__(self, api_key: str = settings.LLM_API_KEY, model: str = settings.LLM_MODEL, base_url: str = None):
-        self.api_key = api_key or settings.LLM_API_KEY
+    def __init__(self, api_key: str = None, model: str = settings.LLM_MODEL, base_url: str = None):
+        self.api_key = api_key or settings.OPENAI_API_KEY or settings.LLM_API_KEY
         self.model = model if model != "mock-expert-v1" else "gpt-4o-mini"
         self.base_url = (base_url or settings.LLM_API_BASE or "https://api.openai.com/v1").rstrip("/")
 

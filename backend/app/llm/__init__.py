@@ -10,8 +10,19 @@ from app.llm.ollama_provider import OllamaProvider
 
 
 def get_llm_provider(name: Optional[str] = None) -> LLMProvider:
-    """Return configured LLM provider instance."""
-    provider_name = (name or settings.LLM_PROVIDER or "mock").lower()
+    """Return configured LLM provider instance with intelligent environment key detection."""
+    provider_name = (name or settings.LLM_PROVIDER or "").lower()
+
+    # If provider is mock or unset, check if user provided an external API key on Render
+    if not provider_name or provider_name == "mock":
+        if settings.GEMINI_API_KEY:
+            provider_name = "gemini"
+        elif settings.OPENAI_API_KEY:
+            provider_name = "openai"
+        elif settings.ANTHROPIC_API_KEY:
+            provider_name = "anthropic"
+        else:
+            provider_name = "mock"
 
     if provider_name == "openai":
         return OpenAIProvider()

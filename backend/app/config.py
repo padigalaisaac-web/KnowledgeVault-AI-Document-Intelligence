@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "mock"
     LLM_MODEL: str = "mock-expert-v1"
     LLM_API_KEY: str = ""
+    OPENAI_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
     LLM_API_BASE: Optional[str] = None
     LLM_TEMPERATURE: float = 0.1
     LLM_MAX_TOKENS: int = 1024

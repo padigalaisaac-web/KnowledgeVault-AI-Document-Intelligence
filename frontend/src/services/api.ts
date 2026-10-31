@@ -8,16 +8,44 @@ import {
   HealthStatus
 } from '../types';
 
-const isNativeMobile = typeof window !== 'undefined' && (
-  window.location.protocol === 'capacitor:' || 
-  window.location.origin === 'https://localhost' ||
-  window.location.hostname === 'localhost' && window.location.port === ''
-);
+export function getApiBase(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('kv_api_url');
+    if (custom) return custom.replace(/\/+$/, '');
+  }
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl) return envUrl.replace(/\/+$/, '');
 
-// In native mobile app, point to live Render backend; in web browser, use relative same-origin
-export const API_BASE = (import.meta as any).env?.VITE_API_URL || (
-  isNativeMobile ? 'https://knowledgevault-ai.onrender.com' : ''
-);
+  const isNativeMobile = typeof window !== 'undefined' && (
+    window.location.protocol === 'capacitor:' || 
+    window.location.origin === 'https://localhost' ||
+    (window.location.hostname === 'localhost' && window.location.port === '')
+  );
+
+  return isNativeMobile ? 'https://knowledgevault-ai.onrender.com' : '';
+}
+
+export const API_BASE = getApiBase();
+
+async function fetchWithRetry(path: string, options?: RequestInit, retries = 2, delayMs = 1500): Promise<Response> {
+  const base = getApiBase();
+  const url = path.startsWith('http') ? path : `${base}${path.startsWith('/') ? '' : '/'}${path}`;
+  try {
+    const res = await fetch(url, options);
+    // Render Free Tier services return 502/503 during cold-boot wake up
+    if ((res.status === 502 || res.status === 503 || res.status === 504) && retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return fetchWithRetry(path, options, retries - 1, delayMs * 1.5);
+    }
+    return res;
+  } catch (err) {
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return fetchWithRetry(path, options, retries - 1, delayMs * 1.5);
+    }
+    throw err;
+  }
+}
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -41,18 +69,18 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export const api = {
   // Health
   async getHealth(): Promise<HealthStatus> {
-    const res = await fetch(`${API_BASE}/health`);
+    const res = await fetchWithRetry('/health');
     return handleResponse<HealthStatus>(res);
   },
 
   // Collections
   async getCollections(): Promise<Collection[]> {
-    const res = await fetch(`${API_BASE}/api/collections`);
+    const res = await fetchWithRetry('/api/collections');
     return handleResponse<Collection[]>(res);
   },
 
   async createCollection(name: string, description?: string): Promise<Collection> {
-    const res = await fetch(`${API_BASE}/api/collections`, {
+    const res = await fetchWithRetry('/api/collections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, description }),
@@ -61,21 +89,21 @@ export const api = {
   },
 
   async deleteCollection(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/api/collections/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`/api/collections/${id}`, { method: 'DELETE' });
     return handleResponse<void>(res);
   },
 
   // Documents
   async getDocuments(collectionId?: string): Promise<DocumentItem[]> {
-    const url = collectionId
-      ? `${API_BASE}/api/documents?collection_id=${encodeURIComponent(collectionId)}`
-      : `${API_BASE}/api/documents`;
-    const res = await fetch(url);
+    const path = collectionId
+      ? `/api/documents?collection_id=${encodeURIComponent(collectionId)}`
+      : '/api/documents';
+    const res = await fetchWithRetry(path);
     return handleResponse<DocumentItem[]>(res);
   },
 
   async getDocumentDetail(id: string): Promise<DocumentItem> {
-    const res = await fetch(`${API_BASE}/api/documents/${id}`);
+    const res = await fetchWithRetry(`/api/documents/${id}`);
     return handleResponse<DocumentItem>(res);
   },
 
@@ -85,7 +113,7 @@ export const api = {
     if (collectionId) {
       formData.append('collection_id', collectionId);
     }
-    const res = await fetch(`${API_BASE}/api/documents/upload`, {
+    const res = await fetchWithRetry('/api/documents/upload', {
       method: 'POST',
       body: formData,
     });
@@ -93,12 +121,12 @@ export const api = {
   },
 
   async deleteDocument(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/api/documents/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`/api/documents/${id}`, { method: 'DELETE' });
     return handleResponse<void>(res);
   },
 
   async reprocessDocument(id: string): Promise<DocumentItem> {
-    const res = await fetch(`${API_BASE}/api/documents/${id}/reprocess`, { method: 'POST' });
+    const res = await fetchWithRetry(`/api/documents/${id}/reprocess`, { method: 'POST' });
     return handleResponse<DocumentItem>(res);
   },
 
@@ -111,7 +139,7 @@ export const api = {
     rerank: boolean = false,
     topK: number = 5
   ): Promise<Message> {
-    const res = await fetch(`${API_BASE}/api/chat`, {
+    const res = await fetchWithRetry('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -127,17 +155,17 @@ export const api = {
   },
 
   async getConversations(): Promise<Conversation[]> {
-    const res = await fetch(`${API_BASE}/api/conversations`);
+    const res = await fetchWithRetry('/api/conversations');
     return handleResponse<Conversation[]>(res);
   },
 
   async getConversation(id: string): Promise<Conversation> {
-    const res = await fetch(`${API_BASE}/api/conversations/${id}`);
+    const res = await fetchWithRetry(`/api/conversations/${id}`);
     return handleResponse<Conversation>(res);
   },
 
   async createConversation(title?: string, collectionId?: string): Promise<Conversation> {
-    const res = await fetch(`${API_BASE}/api/conversations`, {
+    const res = await fetchWithRetry('/api/conversations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, collection_id: collectionId }),
@@ -146,23 +174,23 @@ export const api = {
   },
 
   async deleteConversation(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/api/conversations/${id}`, { method: 'DELETE' });
+    const res = await fetchWithRetry(`/api/conversations/${id}`, { method: 'DELETE' });
     return handleResponse<void>(res);
   },
 
   // Evaluation
   async getEvaluationRuns(): Promise<EvaluationRun[]> {
-    const res = await fetch(`${API_BASE}/api/evaluation/runs`);
+    const res = await fetchWithRetry('/api/evaluation/runs');
     return handleResponse<EvaluationRun[]>(res);
   },
 
   async getEvaluationRun(id: string): Promise<EvaluationRun> {
-    const res = await fetch(`${API_BASE}/api/evaluation/runs/${id}`);
+    const res = await fetchWithRetry(`/api/evaluation/runs/${id}`);
     return handleResponse<EvaluationRun>(res);
   },
 
   async triggerEvaluation(name: string, retrievalMode: string = 'hybrid', topK: number = 5): Promise<EvaluationRun> {
-    const res = await fetch(`${API_BASE}/api/evaluation/run`, {
+    const res = await fetchWithRetry('/api/evaluation/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, retrieval_mode: retrievalMode, top_k: topK }),
@@ -171,17 +199,17 @@ export const api = {
   },
 
   getExportUrl(runId: string, format: 'json' | 'csv'): string {
-    return `${API_BASE}/api/evaluation/runs/${runId}/export?format=${format}`;
+    return `${getApiBase()}/api/evaluation/runs/${runId}/export?format=${format}`;
   },
 
   // Settings
   async getSettings(): Promise<SystemSettings> {
-    const res = await fetch(`${API_BASE}/api/settings`);
+    const res = await fetchWithRetry('/api/settings');
     return handleResponse<SystemSettings>(res);
   },
 
   async updateSettings(updates: Partial<SystemSettings>): Promise<SystemSettings> {
-    const res = await fetch(`${API_BASE}/api/settings`, {
+    const res = await fetchWithRetry('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),

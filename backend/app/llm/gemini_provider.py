@@ -9,8 +9,8 @@ logger = logging.getLogger("knowledgevault.gemini")
 
 
 class GeminiProvider(LLMProvider):
-    def __init__(self, api_key: str = settings.LLM_API_KEY, model: str = settings.LLM_MODEL):
-        self.api_key = api_key or settings.LLM_API_KEY
+    def __init__(self, api_key: str = None, model: str = settings.LLM_MODEL):
+        self.api_key = api_key or settings.GEMINI_API_KEY or settings.LLM_API_KEY
         self.model = model if model != "mock-expert-v1" else "gemini-1.5-flash"
 
     def generate(self, prompt: str, system_prompt: str, max_tokens: int = 1024, temperature: float = 0.1) -> str:
