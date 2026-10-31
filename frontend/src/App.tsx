@@ -20,10 +20,23 @@ import { SettingsModal } from './components/SettingsModal';
 import { DocumentItem, Collection, Conversation, SystemSettings, HealthStatus, CitationItem } from './types';
 import { api } from './services/api';
 
-function loadLocal<T>(key: string, defaultValue: T): T {
+function loadLocalArray<T>(key: string): T[] {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : defaultValue;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function loadLocalObject<T>(key: string, defaultValue: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return defaultValue;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : defaultValue;
   } catch {
     return defaultValue;
   }
@@ -43,21 +56,29 @@ function saveLocal<T>(key: string, value: T): void {
 
 export function App() {
   const [activeView, setActiveView] = useState<'research' | 'vault' | 'benchmarks'>(() => {
-    return (localStorage.getItem('kv_active_view') as any) || 'research';
+    try {
+      const saved = localStorage.getItem('kv_active_view');
+      if (saved === 'research' || saved === 'vault' || saved === 'benchmarks') {
+        return saved;
+      }
+    } catch {}
+    return 'research';
   });
-  const [documents, setDocuments] = useState<DocumentItem[]>(() => loadLocal('kv_documents', []));
-  const [collections, setCollections] = useState<Collection[]>(() => loadLocal('kv_collections', []));
-  const [conversations, setConversations] = useState<Conversation[]>(() => loadLocal('kv_conversations', []));
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(() => loadLocal('kv_active_conv', null));
-  const [settings, setSettings] = useState<SystemSettings | null>(() => loadLocal('kv_settings', null));
-  const [health, setHealth] = useState<HealthStatus | null>(() => loadLocal('kv_health', null));
-  const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(() => loadLocal('kv_selected_citation', null));
+  const [documents, setDocuments] = useState<DocumentItem[]>(() => loadLocalArray('kv_documents'));
+  const [collections, setCollections] = useState<Collection[]>(() => loadLocalArray('kv_collections'));
+  const [conversations, setConversations] = useState<Conversation[]>(() => loadLocalArray('kv_conversations'));
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(() => loadLocalObject('kv_active_conv', null));
+  const [settings, setSettings] = useState<SystemSettings | null>(() => loadLocalObject('kv_settings', null));
+  const [health, setHealth] = useState<HealthStatus | null>(() => loadLocalObject('kv_health', null));
+  const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(() => loadLocalObject('kv_selected_citation', null));
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   // Sync state changes to localStorage for instant hydration across reloads & preview details
   useEffect(() => {
-    localStorage.setItem('kv_active_view', activeView);
+    try {
+      localStorage.setItem('kv_active_view', activeView);
+    } catch {}
   }, [activeView]);
 
   useEffect(() => {
@@ -98,14 +119,14 @@ export function App() {
         api.getSettings().catch(() => null),
       ]);
       if (h) setHealth(h);
-      if (docs) setDocuments(docs);
-      if (colls) setCollections(colls);
-      if (convs) {
+      if (Array.isArray(docs)) setDocuments(docs);
+      if (Array.isArray(colls)) setCollections(colls);
+      if (Array.isArray(convs)) {
         setConversations(convs);
         // Keep active conversation reference fresh
         setActiveConversation((prev) => {
           if (!prev) return null;
-          const match = convs.find((c: Conversation) => c.id === prev.id);
+          const match = convs.find((c: Conversation) => c && c.id === prev.id);
           return match || prev;
         });
       }

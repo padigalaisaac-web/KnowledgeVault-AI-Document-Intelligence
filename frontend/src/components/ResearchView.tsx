@@ -47,56 +47,87 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
     if (activeConversation?.id) {
       try {
         const cached = localStorage.getItem(`kv_msgs_${activeConversation.id}`);
-        if (cached) return JSON.parse(cached);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) return parsed;
+        }
       } catch {}
     }
     return [];
   });
-  const [inputQuery, setInputQuery] = useState(() => localStorage.getItem('kv_draft_query') || '');
+  const [inputQuery, setInputQuery] = useState(() => {
+    try {
+      return localStorage.getItem('kv_draft_query') || '';
+    } catch {
+      return '';
+    }
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<string>(
-    () => localStorage.getItem('kv_selected_collection') || ''
-  );
-  const [retrievalMode, setRetrievalMode] = useState<string>(
-    () => localStorage.getItem('kv_retrieval_mode') || 'hybrid'
-  );
+  const [selectedCollection, setSelectedCollection] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kv_selected_collection') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [retrievalMode, setRetrievalMode] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kv_retrieval_mode') || 'hybrid';
+    } catch {
+      return 'hybrid';
+    }
+  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const safeCollections = Array.isArray(collections) ? collections : [];
+  const safeConversations = Array.isArray(conversations) ? conversations : [];
+  const safeDocuments = Array.isArray(documents) ? documents : [];
+  const safeMessages = Array.isArray(messages) ? messages : [];
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Sync draft query, collection & mode to localStorage
   useEffect(() => {
-    if (inputQuery) {
-      localStorage.setItem('kv_draft_query', inputQuery);
-    } else {
-      localStorage.removeItem('kv_draft_query');
-    }
+    try {
+      if (inputQuery) {
+        localStorage.setItem('kv_draft_query', inputQuery);
+      } else {
+        localStorage.removeItem('kv_draft_query');
+      }
+    } catch {}
   }, [inputQuery]);
 
   useEffect(() => {
-    localStorage.setItem('kv_selected_collection', selectedCollection);
+    try {
+      localStorage.setItem('kv_selected_collection', selectedCollection);
+    } catch {}
   }, [selectedCollection]);
 
   useEffect(() => {
-    localStorage.setItem('kv_retrieval_mode', retrievalMode);
+    try {
+      localStorage.setItem('kv_retrieval_mode', retrievalMode);
+    } catch {}
   }, [retrievalMode]);
 
   // Load messages whenever activeConversation changes (with instant cache hydration)
   useEffect(() => {
-    if (activeConversation) {
+    if (activeConversation?.id) {
       const cacheKey = `kv_msgs_${activeConversation.id}`;
       // Instant display from cache (0 ms perceptual latency)
       try {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
-          setMessages(JSON.parse(cached));
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            setMessages(parsed);
+          }
         }
       } catch {}
 
       // Revalidate in background
       api.getConversation(activeConversation.id)
         .then((c) => {
-          const fetched = c.messages || [];
+          const fetched = (c && Array.isArray(c.messages)) ? c.messages : [];
           setMessages(fetched);
           try {
             localStorage.setItem(cacheKey, JSON.stringify(fetched));
@@ -241,7 +272,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                 onClick={onNavigateToDocs}
                 className="text-emerald-400 hover:underline flex items-center space-x-0.5"
               >
-                <span>{documents.length} docs</span>
+                <span>{safeDocuments.length} docs</span>
                 <ArrowUpRight className="w-2.5 h-2.5" />
               </button>
             </div>
@@ -251,7 +282,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               className="w-full bg-surface-950 border border-surface-800 rounded-lg px-2.5 py-1.5 text-xs text-surface-200 focus:outline-none focus:border-emerald-500"
             >
               <option value="">All Uploaded Documents</option>
-              {collections.map((c) => (
+              {safeCollections.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.document_count || 0})
                 </option>
@@ -281,10 +312,10 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
               Chat Threads
             </div>
 
-            {conversations.length === 0 ? (
+            {safeConversations.length === 0 ? (
               <p className="px-2 py-3 text-xs text-surface-500 italic">No previous chats yet.</p>
             ) : (
-              conversations.map((conv) => {
+              safeConversations.map((conv) => {
                 const isActive = activeConversation?.id === conv.id;
                 return (
                   <div

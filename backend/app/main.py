@@ -82,6 +82,20 @@ app.add_middleware(
 # GZip compression for fast payload transfers
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+
+@app.middleware("http")
+async def add_cache_control_headers(request, call_next):
+    """Enforce fresh HTML documents and immutable asset caching across deployments."""
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith(".html") or path == "/sw.js" or path == "/manifest.json":
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    elif path.startswith("/assets/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
 # Include API Routers
 app.include_router(collections.router)
 app.include_router(documents.router)

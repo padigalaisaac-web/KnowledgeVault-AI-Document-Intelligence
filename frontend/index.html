@@ -20,14 +20,56 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+      // Auto-recover if an outdated service worker cached an old bundle hash that no longer exists
+      window.addEventListener('error', function(event) {
+        var msg = (event && event.message) ? String(event.message).toLowerCase() : '';
+        var isChunkError = msg.indexOf('loading chunk') !== -1 || msg.indexOf('failed to fetch dynamically imported module') !== -1;
+        var isTagError = event.target && (event.target.tagName === 'SCRIPT' || event.target.tagName === 'LINK');
+        
+        if (isChunkError || isTagError) {
+          if (!sessionStorage.getItem('kv_cache_busted')) {
+            sessionStorage.setItem('kv_cache_busted', '1');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                for (var r of regs) r.unregister();
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                for (var name of names) caches.delete(name);
+                window.location.reload();
+              });
+            } else {
+              window.location.reload();
+            }
+          }
+        }
+      }, true);
+    </script>
   </head>
   <body class="bg-surface-950 text-surface-100 antialiased selection:bg-brand-500/20 selection:text-brand-300 overscroll-none">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback Loading Shell (replaced instantly upon React hydration) -->
+      <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #030712; color: #f3f4f6; font-family: ui-sans-serif, system-ui, sans-serif;">
+        <div style="width: 44px; height: 44px; border-radius: 12px; background-color: #111827; border: 1px solid #1f2937; display: flex; align-items: center; justify-content: center; color: #34d399; font-weight: bold; font-size: 15px; margin-bottom: 12px;">
+          KV
+        </div>
+        <div style="font-size: 14px; font-weight: 600; letter-spacing: -0.025em; margin-bottom: 4px;">
+          KnowledgeVault AI
+        </div>
+        <div style="font-size: 11px; color: #9ca3af; font-family: monospace;">
+          Loading Research Workspace...
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            reg.update();
+          }).catch(() => {});
         });
       }
     </script>
