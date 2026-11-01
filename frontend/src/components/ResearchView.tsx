@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Conversation, Message, Collection, DocumentItem, CitationItem } from '../types';
 import { api } from '../services/api';
+import { ExplainableMessageRenderer } from './ExplainableMessageRenderer';
 
 interface ResearchViewProps {
   conversations: Conversation[];
@@ -411,7 +412,15 @@ export const ResearchView: React.FC<ResearchViewProps> = ({
                           : 'bg-surface-900/90 border border-surface-800 text-surface-200 rounded-tl-none space-y-3'
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <ExplainableMessageRenderer
+                          content={msg.content}
+                          sources={msg.sources}
+                          onSelectCitation={onSelectCitation}
+                        />
+                      )}
 
                       {/* Insufficient Evidence Notice */}
                       {!isUser && msg.confidence === 'insufficient_evidence' && (
